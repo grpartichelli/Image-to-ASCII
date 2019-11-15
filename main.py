@@ -1,61 +1,69 @@
+# -*- coding: utf-8 -*-
 import numpy as np
+import potrace
 import cv2 
-import matplotlib.pyplot as plt
-from skimage import measure
+#Our libraries:
+from myimage import *
 
 
-#Cria uma imagem e coloca nela os pixeis que são os vertexes das linhas que formam os
-#contours
-def draw_points(contours,height,width):
-    
-    img = np.zeros((height,width,1), np.uint8)
-    img.fill(255)
-
-    for line in contours:
-        for point in line:
-            point = point[0]
-            #Os pontos ficam dentro de um array?
-            #Tipo: [[22,33]]
-            img[point[1],point[0]] = 0
-
-    cv2.imshow('Points', img )
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
-
-
-#Pinta os contours na imagem
-def draw_contours(contours,height,width):
-    
-    img = np.zeros((height,width,1), np.uint8)
-    img.fill(255)
-    cv2.drawContours(img, contours, -1, 0,1)
-    
-    cv2.imshow('Contours', img )
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
 
 
 ##############################################################
 # Load image
-img = cv2.imread('images/triangle.png',0)
-#Turn image to black and white
-ret,img = cv2.threshold(img, 80, 255, 0)
-#Get image height and width
-height, width = img.shape
+
+img = myimage("images/monk.jpg")
+img.display()
+
+'''
+# Create a bitmap from the array
+bmp = potrace.Bitmap(data)
+# Trace the bitmap to a path
+path = bmp.trace(turdsize = 0 ,turnpolicy = potrace.TURNPOLICY_MINORITY,opticurve = 0, alphamax=0, opttolerance = 100)
 
 
-cv2.imshow('Image', img )
+# Iterate over path curves
+
+img = np.zeros((height+1,width+1,1), np.uint8)
+img.fill(255)
+
+
+img2 = np.zeros((height+1,width+1,1), np.uint8)
+img2.fill(255)
+
+for i,curve in enumerate(path):
+    if(i == 0):
+        continue
+    x1,y1 =  curve.start_point
+
+    x1 = int(x1)
+    y1 = int(y1)
+    
+    img2[y1,x1] = 0
+    
+    for segment in curve:
+        x2,y2 = segment.end_point
+
+
+        
+        x2 = int(x2)
+        y2 = int(y2)
+        
+        img2[y2,x2] = 0
+
+
+        lineThickness = 1
+        cv2.line(img, (x1,y1), (x2,y2), 0, lineThickness)
+        x1 = x2
+        y1 = y2
+        
+
+cv2.imshow('Points', img2 )
 cv2.waitKey(0)
 cv2.destroyAllWindows()
+      
+        
 
-
-#############################################################
-#Getting the contours
-contours,hierarchy= cv2.findContours(img, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE )
-
-
-draw_contours(contours,height,width)
-draw_points(contours,height,width)
-
-
-
+cv2.imshow('Lines', img )
+cv2.waitKey(0)
+cv2.destroyAllWindows()
+'''
