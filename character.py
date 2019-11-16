@@ -26,3 +26,6 @@ class character():
 		cv2.imshow('Image', self.img)
 		cv2.waitKey(0)
 		cv2.destroyAllWindows()
+
+	def size(self):
+		return  self.img.shape

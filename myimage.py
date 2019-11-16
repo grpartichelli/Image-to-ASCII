@@ -5,13 +5,24 @@ import cv2
 class myimage():
 	img= None; #Black and white version of the image
 	bmp= None; #Bit map version of the image
+	height = None; #Image height
+	width = None;  #Image width
+	
+	lines= [];  #All the lines of the image
 	lines_img= None #Image of the lines
-	height = None;
-	shape = None;
-	lines= [];
+
+	split_img = [] #Matrix with all the blocks of character sizes
 
 	def __init__(self, image_path):
 		img = cv2.imread(image_path,0)
+
+		
+		#This code adds a white padding around the image
+		#The padding helps separete contours from the borders and allows us to ignore the borders when dividing the image
+		top, bottom, left, right = [25]*4 #25 is the size of the padding
+		img= cv2.copyMakeBorder(img, top, bottom, left, right, cv2.BORDER_CONSTANT, value=[255,255,255])
+
+		#Gets the image shape
 		self.height, self.width = img.shape
 		
 		#Turn image to black and white
@@ -19,8 +30,9 @@ class myimage():
 		self.bmp = self.img/255
 
 		self.lines = self.get_lines()
-		self.lines_img =self.get_lines_img(1)
-	
+		self.lines_img =self.get_lines_img(2)
+		
+
 
 	#Get the lines of the image
 	def get_lines(self):
@@ -94,3 +106,19 @@ class myimage():
 		cv2.waitKey(0)
 		cv2.destroyAllWindows()
 		return img
+
+
+	def split_up(self,ch_height,ch_width):
+		block_img = np.zeros((ch_height,ch_width))
+		
+
+		#Iterating over blocks
+		for row in np.arange(self.height - ch_height + 1, step = ch_height):
+			aux_list = []
+			for col in np.arange(self.width - ch_width + 1, step = ch_width):
+				block_img = self.lines_img[row:row+ch_height , col:col+ch_width]
+				aux_list.append(block_img)
+
+			self.split_img.append(aux_list)
+
+		return self.split_img
