@@ -64,7 +64,7 @@ class myimage():
 	#Return the image with the drawn lines
 	def get_lines_img(self,line_thickness):
 		#Creates an empty image
-		img = np.zeros((self.height+1,self.width+1,1), np.uint8)
+		img = np.zeros((self.height+1,self.width+1))
 		img.fill(255)
 
 		#Draw all the lines
@@ -107,18 +107,22 @@ class myimage():
 		cv2.destroyAllWindows()
 		return img
 
-
+	#Creates a list matrix of every block of the image
 	def split_up(self,ch_height,ch_width):
-		block_img = np.zeros((ch_height,ch_width))
+		block = np.zeros((ch_height,ch_width))
 		
 
 		#Iterating over blocks
 		for row in np.arange(self.height - ch_height + 1, step = ch_height):
 			aux_list = []
 			for col in np.arange(self.width - ch_width + 1, step = ch_width):
-				block_img = self.lines_img[row:row+ch_height , col:col+ch_width]
-				aux_list.append(block_img)
+				block = self.lines_img[row:row+ch_height , col:col+ch_width]
+				aux_list.append(block)
+				if col == 0 and row == 0:
+					pass
 
 			self.split_img.append(aux_list)
 
 		return self.split_img
+
+				
