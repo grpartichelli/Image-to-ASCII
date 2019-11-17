@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 import numpy as np
-import potrace
 import cv2 
 #Our libraries:
 from myimage import *
@@ -69,9 +68,13 @@ def write_characters(filename,characters):
 
 ############################################################################################################################
 
+
+
 def main():
+	
 	# Load image
-	img = myimage("images/robot.jpg")
+	img = myimage("images/monk.jpg")
+	img.display()
 	img.display_lines()
 
 	#Load characters

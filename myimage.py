@@ -1,6 +1,8 @@
 import numpy as np
-import potrace
 import cv2 
+from skimage import measure
+from skimage.draw import ellipse
+from skimage.measure import find_contours, approximate_polygon, subdivide_polygon
 
 class myimage():
 	img= None; #Black and white version of the image
@@ -26,7 +28,7 @@ class myimage():
 		self.height, self.width = img.shape
 		
 		#Turn image to black and white
-		ret,self.img = cv2.threshold(img, 80, 255, 0)
+		ret,self.img = cv2.threshold(img, 65, 255, 0)
 		self.bmp = self.img/255
 
 		self.lines = self.get_lines()
@@ -37,25 +39,22 @@ class myimage():
 	#Get the lines of the image
 	def get_lines(self):
 	# Trace the bitmap to a path
-		path = potrace.Bitmap(self.bmp).trace()
+		
+		contours = measure.find_contours(self.img, level = 1)
 		lines = []
+		
 		#Get all the lines on the image 
-		for i,curve in enumerate(path):
-			if(i == 0):
-				continue
+		for contour in contours:
 			
-			x1,y1 =  curve.start_point
-			x1 = int(x1)
-			y1 = int(y1)
-			for segment in curve:
-				x2,y2 = segment.end_point
-				x2 = int(x2)
-				y2 = int(y2)
-
-				lines.append(((x1,y1),(x2,y2)))
+			for i,point in enumerate(approximate_polygon(contour, tolerance=4)):
 				
-				x1 = x2
-				y1 = y2
+				y2,x2 = int(point[0]),int(point[1])
+				
+				if i != 0:
+					lines.append(((x1,y1),(x2,y2)))
+				
+				x1,y1 = x2,y2
+				
 				
 		return lines
 
