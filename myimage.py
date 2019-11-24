@@ -3,6 +3,10 @@ import cv2
 from skimage import measure
 from skimage.draw import ellipse
 from skimage.measure import find_contours, approximate_polygon, subdivide_polygon
+from PIL import Image
+
+DEF_WIDTH = 800
+DEF_HEIGHT = 800
 
 class myimage():
 	img= None; #Black and white version of the image
@@ -15,10 +19,12 @@ class myimage():
 
 	split_img = [] #Matrix with all the blocks of character sizes
 
+	line_thickness = 3
+
 	def __init__(self, image_path):
 		img = cv2.imread(image_path,0)
 
-		
+
 		#This code adds a white padding around the image
 		#The padding helps separete contours from the borders and allows us to ignore the borders when dividing the image
 		top, bottom, left, right = [25]*4 #25 is the size of the padding
@@ -26,13 +32,21 @@ class myimage():
 
 		#Gets the image shape
 		self.height, self.width = img.shape
+
+		ratio_h =  DEF_HEIGHT/self.height
+		ratio_w =  DEF_WIDTH/self.width
+		img = cv2.resize(img,None,fx=ratio_w,fy=ratio_h)
 		
+		self.height = DEF_HEIGHT
+		self.width = DEF_WIDTH
+		
+
 		#Turn image to black and white
 		ret,self.img = cv2.threshold(img, 65, 255, 0)
 		self.bmp = self.img/255
 
 		self.lines = self.get_lines()
-		self.lines_img =self.get_lines_img(2)
+		self.lines_img =self.get_lines_img(self.line_thickness)
 		
 
 

@@ -69,9 +69,8 @@ def write_characters(filename,characters):
 ############################################################################################################################
 
 
-
 def main():
-	
+
 	# Load image
 	img = myimage("images/monk.jpg")
 	img.display()
@@ -102,7 +101,6 @@ def main():
 
 
 	write_characters("output.txt",best_characters)
-
 
 if __name__ == "__main__":
 	main()
