@@ -72,8 +72,9 @@ def write_characters(filename,characters):
 def main():
 
 	# Load image
-	img = myimage("images/monk.jpg")
+	img = myimage("images/robot.jpg")
 	img.display()
+	img.display_points()
 	img.display_lines()
 
 	#Load characters
@@ -88,6 +89,10 @@ def main():
 
 	#Calculates the split image, its a list matrix with every block of the image
 	blocks = img.split_up(chr_height,chr_width)
+
+
+
+
 
 	#Gets the best characters
 	best_characters = get_best_characters(blocks,char_list)
