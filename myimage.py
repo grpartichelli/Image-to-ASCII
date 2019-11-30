@@ -4,6 +4,7 @@ from skimage import measure
 from skimage.draw import ellipse
 from skimage.measure import find_contours, approximate_polygon, subdivide_polygon
 from PIL import Image
+import potrace
 
 DEF_WIDTH = 800
 DEF_HEIGHT = 800
@@ -51,7 +52,7 @@ class myimage():
         
 
 
-    #Get the lines and points of the image
+   #Get the lines and points of the image
     def calculate_lines_and_points(self):
     # Trace the bitmap to a path
         
@@ -61,7 +62,7 @@ class myimage():
         #Get all the lines on the image 
         for contour in contours:
             
-            for i,point in enumerate(approximate_polygon(contour, tolerance=4)):
+            for i,point in enumerate(approximate_polygon(contour, tolerance=2)):
                 
                 y2,x2 = int(point[0]),int(point[1])
                 points.append([x2,y2])
@@ -119,19 +120,21 @@ class myimage():
 
     def split_up(self,ch_height,ch_width):
         block = np.zeros((ch_height,ch_width))
-        
+        self.split_img = []
 
         #Iterating over blocks
         for row in np.arange(self.height - ch_height + 1, step = ch_height):
-            aux_list = []
+            count =0
             for col in np.arange(self.width - ch_width + 1, step = ch_width):
+                count = count + 1
                 block = self.lines_img[row:row+ch_height , col:col+ch_width]
-                aux_list.append(block)
+                
+                self.split_img.append(block)
                 if col == 0 and row == 0:
                     pass
 
-            self.split_img.append(aux_list)
-
-        return self.split_img
+            
+        print(count)
+        return self.split_img,count
 
                 
