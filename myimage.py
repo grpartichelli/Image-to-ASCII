@@ -1,7 +1,7 @@
 import numpy as np
 import cv2 
 from skimage import measure
-from skimage.draw import ellipse
+
 from skimage.measure import find_contours, approximate_polygon, subdivide_polygon
 from PIL import Image
 import potrace
@@ -134,7 +134,7 @@ class myimage():
                     pass
 
             
-        print(count)
+        
         return self.split_img,count
 
                 
