@@ -1,14 +1,84 @@
 # -*- coding: utf-8 -*-
 import numpy as np
+import sys
+np.set_printoptions(threshold=sys.maxsize)
 import cv2 
 from scipy.spatial.distance import cdist, cosine
 from scipy.optimize import linear_sum_assignment
 from skimage.measure import find_contours, approximate_polygon, subdivide_polygon
+from skimage.metrics import structural_similarity as ssim
 #Our libraries:
 from myimage import *
 from character import *
 import math
 import random
+
+
+
+##############################################################
+#Transform a matrix of characters into an image
+def blocks_to_image(blocks, blocks_per_line):
+    count = 0
+    first_row = True
+
+    for block in blocks:
+        count = count + 1
+        if count == 1:
+            block_row= block       
+        else:
+            block_row = np.concatenate((block_row, block), axis=1)
+
+
+        if count == blocks_per_line:
+            if first_row:
+                block_img = block_row
+                first_row = False
+            else:
+                block_img  = np.concatenate((block_img, block_row), axis=0)
+            count = 0 
+
+    return block_img 
+#Transform a matrix of characters into an image
+def characters_to_image(characters, blocks_per_line):
+    count = 0
+    first_row = True
+
+    for character in characters:
+        count = count + 1
+        if count == 1:
+            character_row= character.get_img()         
+        else:
+            character_row = np.concatenate((character_row, character.get_img()), axis=1)
+
+
+        if count == blocks_per_line:
+            if first_row:
+                character_img = character_row
+                first_row = False
+            else:
+                character_img  = np.concatenate((character_img, character_row), axis=0)
+            count = 0 
+
+    return character_img 
+##############################################################
+#Writes a list matrix of characters into a file
+def write_characters(filename,characters,blocks_per_line):
+    #Writes the characters on a txt file
+    f = open(filename, "w")
+    count = 0
+
+    for character in characters:
+        count = count + 1
+        f.write(character.get_symbol())
+        
+        if count == blocks_per_line:
+            count = 0
+            f.write("\n")
+    f.close()
+
+############################################################################################################################
+#CÓDIGO TENTANDO UTILIZAR LOG-POLAR-HISTOGRAMS
+
 '''
 def display_points(img):
         points = calculate_points(img)
@@ -164,9 +234,7 @@ def get_best_characters(blocks,char_list):
     return best_characters
 '''  
 ##############################################################
-#Function returns a value which is used to compare a block with a character
-
-
+#FUNCTIONS TO GET THE LINES ("POLYLINES") OF THE BLOCKS
 def get_lines(img):
 
     
@@ -185,7 +253,7 @@ def get_lines(img):
             x1,y1 = x2,y2
     return lines
 
-def get_lines_img(lines,shape,line_thickness=3):
+def get_lines_img(lines,shape,line_thickness=5):
  #Creates an empty image
     height,width = shape
     img = np.zeros((height,width))
@@ -211,7 +279,8 @@ def get_line_blocks(blocks):
     return block_imgs,every_block_lines
 
 
-
+###################################################################################
+#Randomizes the lines of a block
 def randomize_block(block, block_lines,n=1):
     new_lines = []
     for line in block_lines:
@@ -226,16 +295,40 @@ def randomize_block(block, block_lines,n=1):
 
     return get_lines_img(new_lines,block.shape), new_lines
 
+
+#Makes white pixels close to black pixels have  darker values
+def blur_block(block):
+    height,width = block.shape
+    blur=[0,200]
+   
+    for b in range(len(blur)-1):
+        for i in range(height-1):
+            for j in range(width-1):
+                if block[i,j] <= blur[b]:
+                    continue
+                if block[i+1,j+1] == blur[b] or block[i,j+1] == blur[b] or block[i+1,j] == blur[b] or block[i-1,j-1] == blur[b] or block[i,j-1] == blur[b] or block[i-1,j] == blur[b]:
+                   block[i,j] = blur[b+1]
+    return block
+
+
 def compare_function(img1,img2):
+    #print(img1)
 
     return np.average(abs(img1 - img2))
 
-def get_best_characters(blocks,every_block_lines,char_list,blocks_per_line,C=200, T=25):
+def get_best_characters(blocks,every_block_lines,char_list,blocks_per_line,C=50, T=20):
     
+    randimg = blocks_to_image(blocks,blocks_per_line)
+    cv2.imshow('Image', randimg)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+
+
     values = []
     characters= []
     for block in blocks:
         value = 100000000000
+        block =  blur_block(block)
         for character in char_list:
             #Finds the minimum value for this value, that will be our character.
             temp_value = compare_function(block,character.get_img())
@@ -257,16 +350,17 @@ def get_best_characters(blocks,every_block_lines,char_list,blocks_per_line,C=200
         for i in range(len(blocks)):
             if values[i] != 0:
                 random_block,random_lines = randomize_block(blocks[i],every_block_lines[i])
+                blur_random_block = blur_block(random_block)
                 for character in char_list:
-                    if compare_function(random_block,character.get_img()) < values[i]:
-                            if compare_function(random_block,original_blocks[i]) < T :
-                                blocks[i] = random_block
-                                every_block_lines[i] =  random_lines
-                                characters[i] = character
+                    if compare_function(blur_random_block,character.get_img()) < values[i]:
+                        if compare_function(random_block,original_blocks[i]) < T :
+                            blocks[i] = random_block
+                            every_block_lines[i] =  random_lines
+                            characters[i] = character
                                 
 
             
-        
+    
     randimg = blocks_to_image(blocks,blocks_per_line)
     cv2.imshow('Image', randimg)
     cv2.waitKey(0)
@@ -276,68 +370,8 @@ def get_best_characters(blocks,every_block_lines,char_list,blocks_per_line,C=200
     return characters
 
 
-##############################################################
-#Transform a matrix of characters into an image
-def blocks_to_image(characters, blocks_per_line):
-    count = 0
-    first_row = True
-
-    for character in characters:
-        count = count + 1
-        if count == 1:
-            character_row= character        
-        else:
-            character_row = np.concatenate((character_row, character), axis=1)
 
 
-        if count == blocks_per_line:
-            if first_row:
-                character_img = character_row
-                first_row = False
-            else:
-                character_img  = np.concatenate((character_img, character_row), axis=0)
-            count = 0 
-
-    return character_img 
-#Transform a matrix of characters into an image
-def characters_to_image(characters, blocks_per_line):
-    count = 0
-    first_row = True
-
-    for character in characters:
-        count = count + 1
-        if count == 1:
-            character_row= character.get_img()         
-        else:
-            character_row = np.concatenate((character_row, character.get_img()), axis=1)
-
-
-        if count == blocks_per_line:
-            if first_row:
-                character_img = character_row
-                first_row = False
-            else:
-                character_img  = np.concatenate((character_img, character_row), axis=0)
-            count = 0 
-
-    return character_img 
-##############################################################
-#Writes a list matrix of characters into a file
-def write_characters(filename,characters,blocks_per_line):
-    #Writes the characters on a txt file
-    f = open(filename, "w")
-    count = 0
-
-    for character in characters:
-        count = count + 1
-        f.write(character.get_symbol())
-        
-        if count == blocks_per_line:
-            count = 0
-            f.write("\n")
-    f.close()
-
-############################################################################################################################
 
 
 def main():
@@ -350,7 +384,7 @@ def main():
     #Load characters
     char_list= []
     for i in range(32,127):
-        if i != 96 and i!= 126 and i!=  39 and i!= 46 and i!= 44:
+        if i != 96 and i!= 126 and i!=  39 and i!= 46 and i!= 44 and i != 34:
             char = character(i)
             #char.points = calculate_points(char.get_img())
             char_list.append(char)
