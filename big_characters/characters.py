@@ -2,7 +2,7 @@ import cv2
 import PIL.ImageOps 
 from PIL import Image, ImageFont, ImageDraw
 
-fontsize = 24
+fontsize = 50
 # use a truetype font
 font = ImageFont.truetype("Consolas.ttf", fontsize )
 im = Image.new("RGBA", (fontsize, fontsize))

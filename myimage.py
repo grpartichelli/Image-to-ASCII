@@ -6,8 +6,8 @@ from skimage.measure import find_contours, approximate_polygon, subdivide_polygo
 from PIL import Image
 import potrace
 
-DEF_WIDTH = 800
-DEF_HEIGHT = 800
+DEF_WIDTH = 850
+DEF_HEIGHT = 850
 
 class myimage():
     img= None; #Black and white version of the image
@@ -36,6 +36,7 @@ class myimage():
 
         ratio_h =  DEF_HEIGHT/self.height
         ratio_w =  DEF_WIDTH/self.width
+
         img = cv2.resize(img,None,fx=ratio_w,fy=ratio_h)
         
         self.height = DEF_HEIGHT
@@ -127,7 +128,7 @@ class myimage():
             count =0
             for col in np.arange(self.width - ch_width + 1, step = ch_width):
                 count = count + 1
-                block = self.lines_img[row:row+ch_height , col:col+ch_width]
+                block = self.img[row:row+ch_height , col:col+ch_width]
                 
                 self.split_img.append(block)
                 if col == 0 and row == 0:

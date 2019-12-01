@@ -8,7 +8,8 @@ from skimage.measure import find_contours, approximate_polygon, subdivide_polygo
 from myimage import *
 from character import *
 import math
-
+import random
+'''
 def display_points(img):
         points = calculate_points(img)
         height,width = img.shape
@@ -131,35 +132,7 @@ def get_descriptor(points):
         descriptor[i] = sn.reshape(nbins)
     return descriptor
 
-##############################################################
-#Function returns a value which is used to compare a block with a character
 
-def compare_function(block,character):
-    return np.average(abs(character.get_img() - block))
-
-def get_best_characters(blocks,char_list):
-
-    characters= []
-    for block in blocks:
-        value = 100000000000
-        for character in char_list:
-            #Finds the minimum value for this value, that will be our character.
-            temp_value = compare_function(block,character)
-
-            if temp_value < value:
-                value = temp_value
-                best_character = character
-
-            if value == 0:
-                break
-        
-        characters.append(best_character)       
-            
-        
-    return characters
-
-
-'''
 #Finds the best character for each block
 def get_best_characters(blocks,char_list):
     best_characters = []
@@ -189,8 +162,143 @@ def get_best_characters(blocks,char_list):
         best_characters.append(character)
    
     return best_characters
- '''   
+'''  
 ##############################################################
+#Function returns a value which is used to compare a block with a character
+
+
+def get_lines(img):
+
+    
+    #Get the lines and points of the image
+    contours = measure.find_contours(img, level = 1)
+    lines = []
+    #Get all the lines on the image 
+    for contour in contours: 
+        for i,point in enumerate(approximate_polygon(contour, tolerance=2)):
+            
+            y2,x2 = int(point[0]),int(point[1])
+           
+            if i != 0:
+                lines.append(((x1,y1),(x2,y2)))
+            
+            x1,y1 = x2,y2
+    return lines
+
+def get_lines_img(lines,shape,line_thickness=3):
+ #Creates an empty image
+    height,width = shape
+    img = np.zeros((height,width))
+    img.fill(255)
+
+    #Draw all the lines
+    for line in lines:
+        start_point = line[0]
+        end_point = line[1]
+        cv2.line(img, start_point,end_point, 0, line_thickness)
+    
+    return img
+
+def get_line_blocks(blocks):
+    block_imgs = []
+    every_block_lines = []
+    for block in blocks:
+        lines = get_lines(block)
+        block_img = get_lines_img(lines,block.shape)
+        block_imgs.append(block_img)
+        every_block_lines.append(lines)
+
+    return block_imgs,every_block_lines
+
+
+
+def randomize_block(block, block_lines,n=1):
+    new_lines = []
+    for line in block_lines:
+            p1 = line[0]
+            p2 = line[1]
+
+            p1 = (p1[0] + random.randint(-n,n),p1[1] + random.randint(-n,n))
+            p2 = (p2[0] + random.randint(-n,n),p2[1] + random.randint(-n,n))
+            
+            random_line = (p1,p2) 
+            new_lines.append(random_line)
+
+    return get_lines_img(new_lines,block.shape), new_lines
+
+def compare_function(img1,img2):
+
+    return np.average(abs(img1 - img2))
+
+def get_best_characters(blocks,every_block_lines,char_list,blocks_per_line,C=200, T=25):
+    
+    values = []
+    characters= []
+    for block in blocks:
+        value = 100000000000
+        for character in char_list:
+            #Finds the minimum value for this value, that will be our character.
+            temp_value = compare_function(block,character.get_img())
+
+            if temp_value < value:
+                value = temp_value
+                best_character = character
+
+            if value == 0:
+                break
+        
+        characters.append(best_character)       
+        values.append(value)    
+    
+    original_blocks = blocks[:]
+
+    
+    for _ in range(C):
+        for i in range(len(blocks)):
+            if values[i] != 0:
+                random_block,random_lines = randomize_block(blocks[i],every_block_lines[i])
+                for character in char_list:
+                    if compare_function(random_block,character.get_img()) < values[i]:
+                            if compare_function(random_block,original_blocks[i]) < T :
+                                blocks[i] = random_block
+                                every_block_lines[i] =  random_lines
+                                characters[i] = character
+                                
+
+            
+        
+    randimg = blocks_to_image(blocks,blocks_per_line)
+    cv2.imshow('Image', randimg)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+   
+    
+    return characters
+
+
+##############################################################
+#Transform a matrix of characters into an image
+def blocks_to_image(characters, blocks_per_line):
+    count = 0
+    first_row = True
+
+    for character in characters:
+        count = count + 1
+        if count == 1:
+            character_row= character        
+        else:
+            character_row = np.concatenate((character_row, character), axis=1)
+
+
+        if count == blocks_per_line:
+            if first_row:
+                character_img = character_row
+                first_row = False
+            else:
+                character_img  = np.concatenate((character_img, character_row), axis=0)
+            count = 0 
+
+    return character_img 
 #Transform a matrix of characters into an image
 def characters_to_image(characters, blocks_per_line):
     count = 0
@@ -199,7 +307,7 @@ def characters_to_image(characters, blocks_per_line):
     for character in characters:
         count = count + 1
         if count == 1:
-            character_row= character.get_img()          
+            character_row= character.get_img()         
         else:
             character_row = np.concatenate((character_row, character.get_img()), axis=1)
 
@@ -242,33 +350,35 @@ def main():
     #Load characters
     char_list= []
     for i in range(32,127):
-        char = character(i)
-        char.points = calculate_points(char.get_img())
-        char_list.append(char)
+        if i != 96 and i!= 126 and i!=  39 and i!= 46 and i!= 44:
+            char = character(i)
+            #char.points = calculate_points(char.get_img())
+            char_list.append(char)
       
-
-
 
 
     #Gets the resolution of one of the characters(they are all the same)
     chr_height,chr_width = char.size()
 
     #Calculates the split image, its a list matrix with every block of the image
-    blocks,blocks_per_line= img.split_up(chr_height,chr_width)
+    blocks,blocks_per_row= img.split_up(chr_height,chr_width)
+    blocks,every_block_lines = get_line_blocks(blocks)
 
 
+
+
+    
     #Gets the best characters
-    best_characters = get_best_characters(blocks,char_list)
-    write_characters("output.txt",best_characters,blocks_per_line)
+    best_characters = get_best_characters(blocks,every_block_lines, char_list,blocks_per_row)
+    write_characters("output.txt",best_characters,blocks_per_row)
 
     #Transform a matrix of blocks into an image
-    character_img = characters_to_image(best_characters,blocks_per_line)
+    character_img = characters_to_image(best_characters,blocks_per_row)
             
     cv2.imshow('Image', character_img)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
 
-    
 
 if __name__ == "__main__":
     main()
