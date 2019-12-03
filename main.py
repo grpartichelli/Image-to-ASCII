@@ -232,8 +232,9 @@ def get_best_characters(blocks,char_list):
         best_characters.append(character)
    
     return best_characters
-'''  
+'''
 ##############################################################
+
 #FUNCTIONS TO GET THE LINES ("POLYLINES") OF THE BLOCKS
 def get_lines(img):
 
@@ -253,7 +254,7 @@ def get_lines(img):
             x1,y1 = x2,y2
     return lines
 
-def get_lines_img(lines,shape,line_thickness=5):
+def get_lines_img(lines,shape,line_thickness=6):
  #Creates an empty image
     height,width = shape
     img = np.zeros((height,width))
@@ -267,6 +268,7 @@ def get_lines_img(lines,shape,line_thickness=5):
     
     return img
 
+#Get the lines of every block
 def get_line_blocks(blocks):
     block_imgs = []
     every_block_lines = []
@@ -297,6 +299,7 @@ def randomize_block(block, block_lines,n=1):
 
 
 #Makes white pixels close to black pixels have  darker values
+#This blurring helps with desilignment problems
 def blur_block(block):
     height,width = block.shape
     blur=[0,200]
@@ -308,21 +311,22 @@ def blur_block(block):
                     continue
                 if block[i+1,j+1] == blur[b] or block[i,j+1] == blur[b] or block[i+1,j] == blur[b] or block[i-1,j-1] == blur[b] or block[i,j-1] == blur[b] or block[i-1,j] == blur[b]:
                    block[i,j] = blur[b+1]
+    
     return block
 
 
 def compare_function(img1,img2):
-    #print(img1)
+ 
+    MSE = np.square(np.subtract(img1,img2)).mean() 
+    return MSE
 
-    return np.average(abs(img1 - img2))
-
-def get_best_characters(blocks,every_block_lines,char_list,blocks_per_line,C=50, T=20):
-    
+def get_best_characters(blocks,every_block_lines,char_list,blocks_per_line,C=20, T=8000):
+   
     randimg = blocks_to_image(blocks,blocks_per_line)
     cv2.imshow('Image', randimg)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
-
+   
 
     values = []
     characters= []
@@ -344,31 +348,29 @@ def get_best_characters(blocks,every_block_lines,char_list,blocks_per_line,C=50,
         values.append(value)    
     
     original_blocks = blocks[:]
-
     
+    #Optimization code
     for _ in range(C):
         for i in range(len(blocks)):
             if values[i] != 0:
                 random_block,random_lines = randomize_block(blocks[i],every_block_lines[i])
                 blur_random_block = blur_block(random_block)
-                for character in char_list:
-                    if compare_function(blur_random_block,character.get_img()) < values[i]:
-                        if compare_function(random_block,original_blocks[i]) < T :
-                            blocks[i] = random_block
-                            every_block_lines[i] =  random_lines
-                            characters[i] = character
-                                
-
-            
+                #This is to make sure the image doesn't get too distorted
+                if compare_function(random_block,original_blocks[i]) < T:
+                    for character in char_list:
+                        #Trys to find a new best matching character
+                        if compare_function(blur_random_block,character.get_img()) < values[i]:
+                                blocks[i] = random_block
+                                every_block_lines[i] =  random_lines
+                                characters[i] = character
+ 
     
     randimg = blocks_to_image(blocks,blocks_per_line)
     cv2.imshow('Image', randimg)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
    
-    
     return characters
-
 
 
 
@@ -377,14 +379,14 @@ def get_best_characters(blocks,every_block_lines,char_list,blocks_per_line,C=50,
 def main():
 
     # Load image
-    img = myimage("images/monk.jpg")
+    img = myimage("images/fly.png")
     img.display()
     img.display_lines()
     
     #Load characters
     char_list= []
     for i in range(32,127):
-        if i != 96 and i!= 126 and i!=  39 and i!= 46 and i!= 44 and i != 34:
+        if i != 96 and i!= 126 and i!=  39 and i!= 46 and i!= 44 and i != 34 and i != 64:
             char = character(i)
             #char.points = calculate_points(char.get_img())
             char_list.append(char)
@@ -404,6 +406,7 @@ def main():
     
     #Gets the best characters
     best_characters = get_best_characters(blocks,every_block_lines, char_list,blocks_per_row)
+    #best_characters = get_best_characters(blocks, char_list)
     write_characters("output.txt",best_characters,blocks_per_row)
 
     #Transform a matrix of blocks into an image

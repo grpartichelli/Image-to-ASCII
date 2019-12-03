@@ -6,8 +6,8 @@ from skimage.measure import find_contours, approximate_polygon, subdivide_polygo
 from PIL import Image
 import potrace
 
-DEF_WIDTH = 700
-DEF_HEIGHT = 700
+DEF_WIDTH = 800
+DEF_HEIGHT = 800
 
 class myimage():
     img= None; #Black and white version of the image
@@ -20,7 +20,7 @@ class myimage():
 
     split_img = [] #Matrix with all the blocks of character sizes
 
-    line_thickness = 5
+    line_thickness = 6
 
     def __init__(self, image_path):
         img = cv2.imread(image_path,0)
